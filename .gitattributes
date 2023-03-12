@@ -6,4 +6,4 @@
 **/*.vsh linguist-language=V
 **/v.mod linguist-language=V
 
-*.css linguist-vendored=false
+*.css linguist-detectable=false
