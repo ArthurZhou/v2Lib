@@ -18,7 +18,7 @@ __global (
 	storage = "docs"
 	assets = "assets"
 	host = 'localhost'
-	port = 8099
+	port = 8080
 	root = os.getwd()
 )
 
@@ -35,7 +35,7 @@ fn getpath(abs_path string) string {
 }
 
 ["/"]
-fn (mut app App) root(path string) vweb.Result {
+fn (mut app App) index() vweb.Result {
 	return app.redirect("/docs/$home")
 }
 
