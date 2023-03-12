@@ -18,6 +18,8 @@ jobs:
       with:
         v-version: latest
       id: v
+    - name: Install dependencies
+      run: v install markdown
     - name: Build repository app
       run: v -enable-globals .
     - name: Run V tests
