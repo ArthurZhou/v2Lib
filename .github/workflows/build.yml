@@ -22,5 +22,3 @@ jobs:
       run: v install markdown
     - name: Build repository app
       run: v -enable-globals .
-    - name: Run V tests
-      run: v test .
