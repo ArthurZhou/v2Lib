@@ -19,6 +19,6 @@ jobs:
         v-version: latest
       id: v
     - name: Build repository app
-      run: v .
+      run: v -enable-globals .
     - name: Run V tests
       run: v test .
