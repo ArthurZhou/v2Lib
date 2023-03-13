@@ -24,11 +24,10 @@ jobs:
       - name: Build ${{ github.event.repository.name }}
         run: v -enable-globals -prod . -o build v2Lib
       
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
+      - uses: "marvinpinto/action-automatic-releases@latest"
         with:
-          body_path: ${{ github.workspace }}-CHANGELOG.txt
-          token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
           prerelease: true
+          title: "Development Build"
           files: build/*
