@@ -21,6 +21,9 @@ jobs:
       - name: Install dependencies
         run: v install markdown
       
+      - name: Create output dir
+        run: mkdir build
+      
       - name: Build ${{ github.event.repository.name }}
         run: v -enable-globals -prod . -o build/v2Lib
       
