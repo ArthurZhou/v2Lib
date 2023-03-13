@@ -22,4 +22,9 @@ jobs:
         run: v install markdown
       
       - name: Build ${{ github.event.repository.name }}
-        run: v -enable-globals -prod .
+        run: v -enable-globals -prod . -o build v2Lib
+      
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: build/*
