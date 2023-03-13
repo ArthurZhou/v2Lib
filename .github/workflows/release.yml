@@ -22,7 +22,7 @@ jobs:
         run: v install markdown
       
       - name: Build ${{ github.event.repository.name }}
-        run: v -enable-globals -prod . -o build v2Lib
+        run: v -enable-globals -prod . -o build/v2Lib
       
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
