@@ -18,3 +18,4 @@ bin/
 .editorconfig
 /config.json
 /logs/
+/keys.json

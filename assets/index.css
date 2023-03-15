@@ -204,6 +204,15 @@ li.logout a {
     text-decoration: none;
 }
 
-li.logout a:hover {
+li.logout input {
+    width: 80px;
+    display: block;
+    color: #958a4b;
+    background: #1c1c1c;
+    text-align: center;
+    text-decoration: none;
+}
+
+li.menu input[type="submit"].btn:hover {
     background-color: #111;
 }
