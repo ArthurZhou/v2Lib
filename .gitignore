@@ -15,3 +15,7 @@ bin/
 .idea/
 .vscode/
 *.iml
+.editorconfig
+/config.json
+/logs/
+/keys.json
