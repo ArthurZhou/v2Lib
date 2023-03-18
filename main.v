@@ -1,22 +1,8 @@
-import vweb
 import os
-import markdown
-import encoding.utf8
-import regex
 import json
 import log
 import time
-import net.http
-import crypto.sha256
-import readline
-
-struct App { // main app context
-	vweb.Context
-}
-
-struct MDData { // markdown extended data structure
-	title string
-}
+import core
 
 struct Config { // config structure
 	host string
@@ -29,14 +15,16 @@ struct Config { // config structure
 	enable_login bool
 }
 struct AccountData {
+pub:
 	keys []struct {
+	pub:
 		name string
 		hash string
 	}
 }
 
 __global ( // global variables(add param -enable-globals when running or building)
-	ver = "0.0.2-s20220317" // version
+	ver = "0.0.2-s20220318" // version
 	l log.Log // logger
 	root = os.getwd() // root path
 	keys AccountData
@@ -44,6 +32,8 @@ __global ( // global variables(add param -enable-globals when running or buildin
 )
 
 fn read_config() {
+	os.setenv("ROOT", os.getwd(), false)
+
 	l.debug("Reading config")
 	if !os.exists("$root/config.json") { // if config.json does not exist
 		mut cfg_file := os.create("$root/config.json") or {
@@ -163,143 +153,8 @@ fn main() {
 	load_keys()
 
 	mut threads := []thread{}
-	threads << spawn console()
+	threads << spawn core.console(l)
 
 	l.info("Starting v2Lib server on http://${os.getenv("HOST")}:${os.getenv("PORT")}/")
-	vweb.run_at(&App{}, vweb.RunParams{
-		host: os.getenv("HOST")
-		port: os.getenv("PORT").int()
-		family: .ip
-		show_startup_message: false
-	}) or {
-		l.error(err.str())
-	}
-}
-
-fn getpath(abs_path string) string {
-	return "$root/${os.getenv("STORAGE")}/$abs_path"
-}
-
-["/"]
-fn (mut app App) index() vweb.Result { // redirect to home page when visiting /
-	return app.redirect("/docs/${os.getenv("HOME")}")
-}
-
-["/login"; get]
-fn (mut app App) login() vweb.Result { // show login page
-	if os.getenv("ENABLE_LOGIN") == "true" {
-		return app.html(os.getenv("LOGIN").replace("{{ ERR }}", ""))
-	} else {
-		return app.not_found()
-	}
-}
-
-["/login"; post]
-fn (mut app App) handle_login() vweb.Result { // handle login form
-	if os.getenv("ENABLE_LOGIN") == "true" {
-		form := app.form.clone()
-		account_index := accounts.index(form["name"])
-		if account_index >= 0 {
-			current_acc := keys.keys[account_index]
-			if sha256.hexhash(form["pass"]) == current_acc.hash {
-				app.set_cookie(http.Cookie{
-					name: "account",
-					value: current_acc.name,
-					path: "/",
-				})
-				return app.redirect("/docs/${os.getenv("HOME")}")
-			} else {
-				return app.html(os.getenv("LOGIN").replace("{{ ERR }}", "Wrong username or password"))
-			}
-		} else {
-			return app.html(os.getenv("LOGIN").replace("{{ ERR }}", "Wrong username or password"))
-		}
-	} else {
-		return app.not_found()
-	}
-}
-
-["/logout"]
-fn (mut app App) handle_logout() vweb.Result { // handle login form
-	if os.getenv("ENABLE_LOGIN") == "true" {
-		app.set_cookie(http.Cookie{
-			name: "account",
-			value: "",
-			path: "/",
-		})
-		return app.redirect("/login")
-	} else {
-		return app.not_found()
-	}
-}
-
-["/assets/:path"]
-fn (mut app App) assets(path string) vweb.Result { // serve assets files
-	if os.getenv("ENABLE_LOGIN") == "true" {
-		if accounts.index(app.get_cookie("account") or { return app.redirect("/login") }) >= 0 {
-			return app.file("$root/${os.getenv("ASSETS")}/$path")
-		} else {
-			return app.redirect("/login")
-		}
-	} else {
-		return app.file("$root/${os.getenv("ASSETS")}/$path")
-	}
-}
-
-fn render(mut app App, path string) vweb.Result {
-	mut page_title := path
-	if os.exists(getpath(path)) {
-		if path[utf8.len(path)-3..utf8.len(path)] == ".md" {
-			mut data := os.read_file(getpath(path)) or {
-				l.error(err.str())
-				return app.text("Cannot open file: $path")
-			}
-			if data.contains("<d2lib>") && data.contains("</d2lib>") {
-				re := regex.regex_opt("<d2lib>(.*)</d2lib>") or {
-					l.error("Error loading extended data for `$path` reason: ${err.str()}")
-					return app.server_error(500)
-				}
-				start, end := re.match_string(data)
-				page_data := json.decode(MDData, data[start+7..end-8]) or {
-					l.error("Error decoding extended data for `$path` reason: ${err.str()}")
-					return app.server_error(500)
-				}
-				if page_data.title != "" {
-					page_title = page_data.title
-				}
-				data = data.replace(data[start+7..end-8], "").replace("<d2lib>", "").replace("</d2lib>", "")
-			}
-
-			return app.html(os.getenv("TEMPLATE").replace("{{ CONTENT }}", markdown.to_html(data)).replace("{{ TITLE }}", page_title).replace("{{ MENU }}", os.getenv("MENUBAR")))
-
-		} else {
-			return app.file(getpath(path))
-		}
-	} else {
-		return app.not_found()
-	}
-}
-
-["/docs/:path"]
-fn (mut app App) docs(path string) vweb.Result { // serve docs
-	if os.getenv("ENABLE_LOGIN") == "true" {
-		if accounts.index(app.get_cookie("account") or { return app.redirect("/login") }) >= 0 {
-			return render(mut app, path)
-		} else {
-			return app.redirect("/login")
-		}
-	} else {
-		return render(mut app, path)
-	}
-}
-
-fn console() {
-	l.debug("Console started")
-	for true {
-		cmd := readline.read_line("") or { l.error(err.str()) }.replace("\r\n", "").replace("\n", "").split(" ")
-		if cmd[0] == "exit" {
-			l.warn("Now exiting...")
-			exit(0)
-		}
-	}
+	core.start(mut l)
 }
